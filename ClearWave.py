@@ -133,3 +133,18 @@ class ClearWaveAudio:
             file.write(data_bytes)
         
         print(f"Written enhanced audio to {filename}")
+        
+    def amplify(self, gain_factor=2.0):
+        """Apply amplification to the audio samples"""
+        print(f"Applying amplification with gain factor: {gain_factor}")
+        
+        amplified = []
+        for sample in self.samples:
+            # Apply gain
+            new_sample = int(sample * gain_factor)
+            # Clip to prevent overflow
+            new_sample = max(min(new_sample, self.max_value), self.min_value)
+            amplified.append(new_sample)
+        
+        self.samples = amplified
+        return self
