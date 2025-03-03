@@ -92,3 +92,44 @@ class ClearWaveAudio:
             self.min_value = -2**(bits_per_sample - 1)
             
             print(f"Loaded WAV file: {len(samples)} samples, {sample_rate}Hz, {bits_per_sample}-bit")
+            
+    def write_wav_file(self, filename):
+        """Write the processed audio data to a new WAV file"""
+        channels = self.header['channels']
+        sample_rate = self.header['sample_rate']
+        bits_per_sample = self.header['bits_per_sample']
+        
+        bytes_per_sample = bits_per_sample // 8
+        byte_rate = sample_rate * channels * bytes_per_sample
+        block_align = channels * bytes_per_sample
+        
+        # Convert samples to bytes
+        data_bytes = bytearray()
+        for sample in self.samples:
+            data_bytes.extend(sample.to_bytes(bytes_per_sample, byteorder='little', signed=True))
+        
+        data_size = len(data_bytes)
+        file_size = 36 + data_size
+        
+        with open(filename, 'wb') as file:
+            # Write RIFF header
+            file.write(b'RIFF')
+            file.write(file_size.to_bytes(4, byteorder='little'))
+            file.write(b'WAVE')
+            
+            # Write fmt chunk
+            file.write(b'fmt ')
+            file.write((16).to_bytes(4, byteorder='little'))  # Chunk size
+            file.write((1).to_bytes(2, byteorder='little'))   # PCM format
+            file.write(channels.to_bytes(2, byteorder='little'))
+            file.write(sample_rate.to_bytes(4, byteorder='little'))
+            file.write(byte_rate.to_bytes(4, byteorder='little'))
+            file.write(block_align.to_bytes(2, byteorder='little'))
+            file.write(bits_per_sample.to_bytes(2, byteorder='little'))
+            
+            # Write data chunk
+            file.write(b'data')
+            file.write(data_size.to_bytes(4, byteorder='little'))
+            file.write(data_bytes)
+        
+        print(f"Written enhanced audio to {filename}")
