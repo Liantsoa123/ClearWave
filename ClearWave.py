@@ -91,7 +91,7 @@ class ClearWaveAudio:
             self.max_value = 2**(bits_per_sample - 1) - 1
             self.min_value = -2**(bits_per_sample - 1)
             
-            print(f"Loaded WAV file: {len(samples)} samples, {sample_rate}Hz, {bits_per_sample}-bit")
+            print(f"Loaded WAV file: {len(samples)} samples, {sample_rate}Hz, {bits_per_sample}-bit, max_value= {self.max_value}, min_value= {self.min_value} ")
             
     def write_wav_file(self, filename):
         """Write the processed audio data to a new WAV file"""
