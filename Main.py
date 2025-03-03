@@ -1,4 +1,3 @@
-import math
 import sys
 
 from ClearWave import ClearWaveAudio
@@ -15,7 +14,8 @@ def main():
     
     try:
         processor.read_wav_file(input_file)
-        
+        max_sample = max(abs(min(processor.samples)), abs(max(processor.samples)))
+        print(f"Maximum sample value before processing: {max_sample}")
         # Apply processing chain
         processor.amplify(2)                 # Moderate amplification
         processor.write_wav_file(output_file)
