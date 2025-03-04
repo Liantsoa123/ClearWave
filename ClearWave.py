@@ -1,3 +1,4 @@
+import math
 class ClearWaveAudio:
     def __init__(self):
         self.header = {}
@@ -137,14 +138,43 @@ class ClearWaveAudio:
     def amplify(self, gain_factor=2.0):
         """Apply amplification to the audio samples"""
         print(f"Applying amplification with gain factor: {gain_factor}")
-        
+
+        print("Before amplification (first 10 samples):", self.samples[:10])
+
         amplified = []
         for sample in self.samples:
-            # Apply gain
+            # Appliquer le gain et écrêter uniquement si nécessaire
             new_sample = int(sample * gain_factor)
-            # Clip to prevent overflow
             new_sample = max(min(new_sample, self.max_value), self.min_value)
             amplified.append(new_sample)
-        
+
         self.samples = amplified
+
+        print("After amplification (first 10 samples):", self.samples[:10])
+
+        return self
+
+    def anti_distortion(self, threshold=0.8):
+        """Apply soft clipping to prevent harsh distortion"""
+        print(f"Applying anti-distortion with threshold: {threshold}")
+        
+        threshold_value = int(self.max_value * threshold)
+        
+        processed = []
+        for sample in self.samples:
+            if abs(sample) > threshold_value:
+                # Apply soft clipping using a tanh-like function
+                sign = 1 if sample > 0 else -1
+                # Map to 0-1 range
+                normalized = abs(sample) / self.max_value
+                # Apply soft curve
+                if normalized > threshold:
+                    normalized = threshold + (1 - threshold) * math.tanh((normalized - threshold) / (1 - threshold))
+                # Map back to sample range
+                processed_sample = int(sign * normalized * self.max_value)
+                processed.append(processed_sample)
+            else:
+                processed.append(sample)
+        
+        self.samples = processed
         return self
