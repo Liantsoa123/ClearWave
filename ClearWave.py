@@ -178,3 +178,47 @@ class ClearWaveAudio:
         
         self.samples = processed
         return self
+    
+    def reduce_noise(self, threshold_db=-60):
+        """Simple noise gate to reduce background noise"""
+        print(f"Applying noise reduction with threshold: {threshold_db}dB")
+        
+        # Convert threshold from dB to linear
+        threshold = self.max_value * (10 ** (threshold_db / 20))
+        
+        # Calculate noise profile from "silent" portions
+        noise_samples = [abs(s) for s in self.samples if abs(s) < threshold]
+        if noise_samples:
+            noise_floor = sum(noise_samples) / len(noise_samples)
+        else:
+            noise_floor = 0
+        
+        print(f"Detected noise floor: {noise_floor}")
+        
+        # Apply noise reduction
+        processed = []
+        
+        # For a simple version, we'll use a basic noise gate with a release tail
+        release_time = int(self.header['sample_rate'] * 0.1)  # 100ms release
+        gate_open = False
+        remaining_release = 0
+        
+        for sample in self.samples:
+            if abs(sample) > noise_floor * 2:
+                # Signal above threshold, open gate
+                gate_open = True
+                remaining_release = release_time
+                processed.append(sample)
+            elif gate_open and remaining_release > 0:
+                # In release phase
+                attenuation = remaining_release / release_time
+                processed.append(int(sample * attenuation))
+                remaining_release -= 1
+            else:
+                # Gate closed
+                gate_open = False
+                # Attenuate but don't completely remove
+                processed.append(int(sample * 0.1))
+        
+        self.samples = processed
+        return self
