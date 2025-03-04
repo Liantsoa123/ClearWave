@@ -154,3 +154,27 @@ class ClearWaveAudio:
 
         return self
 
+    def anti_distortion(self, threshold=0.8):
+        """Apply soft clipping to prevent harsh distortion"""
+        print(f"Applying anti-distortion with threshold: {threshold}")
+        
+        threshold_value = int(self.max_value * threshold)
+        
+        processed = []
+        for sample in self.samples:
+            if abs(sample) > threshold_value:
+                # Apply soft clipping using a tanh-like function
+                sign = 1 if sample > 0 else -1
+                # Map to 0-1 range
+                normalized = abs(sample) / self.max_value
+                # Apply soft curve
+                if normalized > threshold:
+                    normalized = threshold + (1 - threshold) * math.tanh((normalized - threshold) / (1 - threshold))
+                # Map back to sample range
+                processed_sample = int(sign * normalized * self.max_value)
+                processed.append(processed_sample)
+            else:
+                processed.append(sample)
+        
+        self.samples = processed
+        return self
