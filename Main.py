@@ -18,7 +18,8 @@ def main():
         print(f"Maximum sample value before processing: {max_sample}")
         # Apply processing chain
         #processor.amplify(2)                 # Moderate amplification
-        processor.anti_distortion(0.5)       # Anti-distortion
+        #processor.anti_distortion(0.5)       # Anti-distortion
+        processor.reduce_noise(-50)          # Noise removal
         processor.write_wav_file(output_file)
         print("ClearWave processing completed successfully!")
         
