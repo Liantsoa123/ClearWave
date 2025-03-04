@@ -1,3 +1,4 @@
+import math
 class ClearWaveAudio:
     def __init__(self):
         self.header = {}
@@ -137,14 +138,19 @@ class ClearWaveAudio:
     def amplify(self, gain_factor=2.0):
         """Apply amplification to the audio samples"""
         print(f"Applying amplification with gain factor: {gain_factor}")
-        
+
+        print("Before amplification (first 10 samples):", self.samples[:10])
+
         amplified = []
         for sample in self.samples:
-            # Apply gain
+            # Appliquer le gain et écrêter uniquement si nécessaire
             new_sample = int(sample * gain_factor)
-            # Clip to prevent overflow
             new_sample = max(min(new_sample, self.max_value), self.min_value)
             amplified.append(new_sample)
-        
+
         self.samples = amplified
+
+        print("After amplification (first 10 samples):", self.samples[:10])
+
         return self
+
