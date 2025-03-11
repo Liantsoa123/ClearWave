@@ -158,6 +158,8 @@ class ClearWaveAudio:
         """Apply soft clipping to prevent harsh distortion"""
         print(f"Applying anti-distortion with threshold: {threshold}")
         
+        print("Before anti-distortion (first 10 samples):", self.samples[:10])
+        
         threshold_value = int(self.max_value * threshold)
         
         processed = []
@@ -177,6 +179,9 @@ class ClearWaveAudio:
                 processed.append(sample)
         
         self.samples = processed
+        
+        print("After anti-distortion (first 10 samples):", processed[:10])
+        
         return self
     
     def reduce_noise(self, threshold_db=-60):
