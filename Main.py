@@ -2,9 +2,18 @@ import sys
 
 from ClearWave import ClearWaveAudio
 
+def print_menu():
+    print("\nClearWave Audio Processing Options:")
+    print("1. Amplification")
+    print("2. Anti-distortion")
+    print("3. Noise reduction")
+    print("4. Save and exit")
+    print("0. Exit without saving")
+    return input("Choose an option (0-5): ")
+
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python ClearWaceAudio.py input.wav output.wav")
+        print("Usage: python ClearWaveAudio.py input.wav output.wav")
         return
     
     input_file = sys.argv[1]
@@ -16,13 +25,34 @@ def main():
         processor.read_wav_file(input_file)
         max_sample = max(abs(min(processor.samples)), abs(max(processor.samples)))
         print(f"Maximum sample value before processing: {max_sample}")
-        # Apply processing chain
-        #processor.amplify(2)                 # Moderate amplification
-        #processor.anti_distortion(0.5)       # Anti-distortion
-        processor.reduce_noise(-50)          # Noise removal
-        processor.write_wav_file(output_file)
-        print("ClearWave processing completed successfully!")
         
+        while True:
+            choice = print_menu()
+            
+            if choice == "0":
+                print("Exiting without saving...")
+                return
+            
+            elif choice == "1":
+                gain = float(input("Enter amplification factor (default=2.0): ") or "2.0")
+                processor.amplify(gain)
+            
+            elif choice == "2":
+                threshold = float(input("Enter anti-distortion threshold (0-1, default=0.8): ") or "0.8")
+                processor.anti_distortion(threshold)
+            
+            elif choice == "3":
+                threshold_db = float(input("Enter noise reduction threshold in dB (default=-50): ") or "-50")
+                processor.reduce_noise(threshold_db)
+            
+            elif choice == "4":
+                processor.write_wav_file(output_file)
+                print("ClearWave processing completed successfully!")
+                break
+            
+            else:
+                print("Invalid option. Please choose between 0-4.")
+
     except Exception as e:
         print(f"Error: {e}")
 
