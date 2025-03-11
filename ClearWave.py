@@ -207,11 +207,16 @@ class ClearWaveAudio:
         """Apply soft clipping to prevent harsh distortion"""
         print(f"Applying anti-distortion with threshold: {threshold}")
         
-        print("Before anti-distortion (first 10 samples):", self.samples[:10])
+        # Save the original samples for comparison
+        original_first_10 = self.samples[:10]
+        print("Before anti-distortion (first 10 samples):", original_first_10)
         
         threshold_value = int(self.max_value * threshold)
+        print(f"Threshold value: {threshold_value} (±{threshold * 100}% of max)")
         
         processed = []
+        modified_count = 0
+        
         for sample in self.samples:
             if abs(sample) > threshold_value:
                 # Apply soft clipping using a tanh-like function
@@ -219,17 +224,39 @@ class ClearWaveAudio:
                 # Map to 0-1 range
                 normalized = abs(sample) / self.max_value
                 # Apply soft curve
-                if normalized > threshold:
-                    normalized = threshold + (1 - threshold) * math.tanh((normalized - threshold) / (1 - threshold))
+                normalized = threshold + (1 - threshold) * math.tanh((normalized - threshold) / (1 - threshold))
                 # Map back to sample range
                 processed_sample = int(sign * normalized * self.max_value)
                 processed.append(processed_sample)
+                modified_count += 1
             else:
                 processed.append(sample)
         
         self.samples = processed
         
-        print("After anti-distortion (first 10 samples):", processed[:10])
+        print("After anti-distortion (first 10 samples):", self.samples[:10])
+        
+        # Find the first few modified samples to show as example
+        example_modified = []
+        example_original = []
+        example_indices = []
+        count = 0
+        
+        for i, (orig, proc) in enumerate(zip(self.samples, processed)):
+            if orig != proc and count < 5:
+                example_indices.append(i)
+                example_original.append(orig)
+                example_modified.append(proc)
+                count += 1
+        
+        if example_indices:
+            print("\nExample of modified samples:")
+            for idx, orig, mod in zip(example_indices, example_original, example_modified):
+                print(f"Sample #{idx}: {orig} → {mod} (delta: {mod - orig})")
+        
+        # Calculate percentage of modified samples
+        percent_modified = (modified_count / len(self.samples)) * 100 if self.samples else 0
+        print(f"\nAnti-distortion modified {modified_count} samples ({percent_modified:.2f}% of total)")
         
         return self
     
@@ -316,3 +343,75 @@ class ClearWaveAudio:
         self.samples = processed
         print(f"Noise reduction complete using '{noise_file}' as reference")
         return self
+    
+    def change_speed(self, speed_factor=1.0):
+        """
+        Change the playback speed of audio without affecting pitch.
+        
+        Parameters:
+            speed_factor (float): Speed multiplier
+                                > 1.0: Faster playback (e.g., 2.0 = twice as fast)
+                                < 1.0: Slower playback (e.g., 0.5 = half speed)
+                                = 1.0: No change
+        
+        Returns:
+            self: The ClearWaveAudio instance for method chaining
+        """
+        if speed_factor <= 0:
+            raise ValueError("Speed factor must be greater than 0")
+        
+        print(f"Changing playback speed by factor: {speed_factor}")
+        
+        if speed_factor == 1.0:
+            print("Speed unchanged")
+            return self
+        
+        # Store original sample count
+        original_length = len(self.samples)
+        print(f"Original number of samples: {original_length}")
+        
+        # For speeding up (speed_factor > 1), we take fewer samples
+        # For slowing down (speed_factor < 1), we take more samples through interpolation
+        new_samples = []
+        
+        if speed_factor > 1.0:
+            # Speed up: Take every Nth sample based on the speed factor
+            # This is a simple decimation approach
+            step = speed_factor
+            idx = 0
+            while idx < original_length:
+                new_samples.append(self.samples[int(idx)])
+                idx += step
+        else:
+            # Slow down: Linear interpolation between samples
+            # For each new sample position, calculate the weighted average of adjacent original samples
+            new_length = int(original_length / speed_factor)
+            for i in range(new_length):
+                # Map the new position back to the original position
+                orig_pos = i * speed_factor
+                # Get the integer positions before and after
+                pos_before = int(orig_pos)
+                pos_after = min(pos_before + 1, original_length - 1)
+                # Calculate the fractional part for interpolation weight
+                fraction = orig_pos - pos_before
+                # Perform linear interpolation
+                interpolated = int((1 - fraction) * self.samples[pos_before] + 
+                                fraction * self.samples[pos_after])
+                new_samples.append(interpolated)
+        
+        # Update samples
+        self.samples = new_samples
+        
+        # Update sample rate in header (technically this changes pitch in standard players,
+        # but it's needed to maintain correct playback duration)
+        new_sample_rate = int(self.header['sample_rate'] * speed_factor)
+        print(f"Adjusted sample rate from {self.header['sample_rate']} to {new_sample_rate} Hz")
+        self.header['sample_rate'] = new_sample_rate
+        
+        # Update byte rate in header
+        self.header['byte_rate'] = new_sample_rate * self.header['channels'] * (self.header['bits_per_sample'] // 8)
+        
+        print(f"New number of samples: {len(self.samples)}")
+        print(f"Speed change complete. Duration is now {100/speed_factor:.1f}% of original")
+        
+        return self        
