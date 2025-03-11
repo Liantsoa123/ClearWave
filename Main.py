@@ -1,13 +1,13 @@
 import sys
-
 from ClearWave import ClearWaveAudio
 
 def print_menu():
     print("\nClearWave Audio Processing Options:")
     print("1. Amplification")
     print("2. Anti-distortion")
-    print("3. Noise reduction")
-    print("4. Save and exit")
+    print("3. Noise reduction (threshold)")
+    print("4. Noise reduction (reference file)")
+    print("5. Save and exit")
     print("0. Exit without saving")
     return input("Choose an option (0-5): ")
 
@@ -46,12 +46,19 @@ def main():
                 processor.reduce_noise(threshold_db)
             
             elif choice == "4":
+                noise_file = input("Enter path to noise reference file (WAV): ")
+                if not noise_file:
+                    print("No file entered. Operation cancelled.")
+                    continue
+                processor.reduce_noise_with_reference(noise_file)
+            
+            elif choice == "5":
                 processor.write_wav_file(output_file)
                 print("ClearWave processing completed successfully!")
                 break
             
             else:
-                print("Invalid option. Please choose between 0-4.")
+                print("Invalid option. Please choose between 0-5.")
 
     except Exception as e:
         print(f"Error: {e}")
