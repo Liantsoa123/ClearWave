@@ -104,9 +104,36 @@ class ClearWaveAudio:
         byte_rate = sample_rate * channels * bytes_per_sample
         block_align = channels * bytes_per_sample
         
+        # Determine if we need to clip the samples
+        max_sample = max(self.samples) if self.samples else 0
+        min_sample = min(self.samples) if self.samples else 0
+        
+        if max_sample > self.max_value or min_sample < self.min_value:
+            print(f"WARNING: Samples exceed normal range ({self.min_value} to {self.max_value})")
+            print(f"Current range: {min_sample} to {max_sample}")
+            print("Clipping samples to fit the WAV format...")
+            
+            # Clip the samples to fit in the WAV format
+            clipped_samples = []
+            for sample in self.samples:
+                clipped_sample = max(min(sample, self.max_value), self.min_value)
+                clipped_samples.append(clipped_sample)
+            
+            # Calculate percentage of clipped samples
+            clipped_count = sum(1 for i, s in enumerate(self.samples) 
+                            if s != clipped_samples[i])
+            clip_percentage = (clipped_count / len(self.samples)) * 100
+            print(f"Clipped {clipped_count} samples ({clip_percentage:.2f}% of total)")
+            
+            # Use clipped samples for file writing
+            write_samples = clipped_samples
+        else:
+            # No clipping needed
+            write_samples = self.samples
+        
         # Convert samples to bytes
         data_bytes = bytearray()
-        for sample in self.samples:
+        for sample in write_samples:
             data_bytes.extend(sample.to_bytes(bytes_per_sample, byteorder='little', signed=True))
         
         data_size = len(data_bytes)
@@ -135,23 +162,45 @@ class ClearWaveAudio:
         
         print(f"Written enhanced audio to {filename}")
         
-    def amplify(self, gain_factor=2.0):
-        """Apply amplification to the audio samples"""
-        print(f"Applying amplification with gain factor: {gain_factor}")
+    def amplify(self, gain_factor=2.0, no_limit=True):
+        """
+        Apply amplification to the audio samples with optional limiting.
+        
+        Parameters:
+            gain_factor (float): The amplification factor to apply
+            no_limit (bool): If True, allows samples to exceed the normal range
+                            If False, clips samples to the valid range
+        
+        Returns:
+            self: The ClearWaveAudio instance for method chaining
+        """
+        print(f"Applying amplification with gain factor: {gain_factor}, limit: {'disabled' if no_limit else 'enabled'}")
 
         print("Before amplification (first 10 samples):", self.samples[:10])
 
         amplified = []
         for sample in self.samples:
-            # Appliquer le gain et écrêter uniquement si nécessaire
+            # Apply the gain factor
             new_sample = int(sample * gain_factor)
-            new_sample = max(min(new_sample, self.max_value), self.min_value)
+            
+            # Apply limiting only if requested
+            if not no_limit:
+                new_sample = max(min(new_sample, self.max_value), self.min_value)
+                
             amplified.append(new_sample)
 
         self.samples = amplified
 
         print("After amplification (first 10 samples):", self.samples[:10])
-
+        
+        # Show warning if samples are out of range
+        max_sample = max(self.samples) if self.samples else 0
+        min_sample = min(self.samples) if self.samples else 0
+        
+        if max_sample > self.max_value or min_sample < self.min_value:
+            print(f"WARNING: Samples exceed normal range ({self.min_value} to {self.max_value})")
+            print(f"Current range: {min_sample} to {max_sample}")
+            
         return self
 
     def anti_distortion(self, threshold=0.8):

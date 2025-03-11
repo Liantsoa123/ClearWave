@@ -35,7 +35,9 @@ def main():
             
             elif choice == "1":
                 gain = float(input("Enter amplification factor (default=2.0): ") or "2.0")
-                processor.amplify(gain)
+                limit_choice = input("Apply limiting to prevent clipping? (y/n, default=n): ").lower()
+                no_limit = limit_choice != 'y'  # Default to no limiting
+                processor.amplify(gain, no_limit)
             
             elif choice == "2":
                 threshold = float(input("Enter anti-distortion threshold (0-1, default=0.8): ") or "0.8")
