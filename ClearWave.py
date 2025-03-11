@@ -227,3 +227,43 @@ class ClearWaveAudio:
         
         self.samples = processed
         return self
+    
+    def reduce_noise_with_reference(self, noise_file):
+        
+        print(f"Applying noise reduction using reference file: {noise_file}")
+        
+        # Create a temporary ClearWaveAudio instance to load the noise file
+        noise_audio = ClearWaveAudio()
+        noise_audio.read_wav_file(noise_file)
+        
+        # Check if the audio formats are compatible
+        if (self.header['sample_rate'] != noise_audio.header['sample_rate'] or 
+            self.header['bits_per_sample'] != noise_audio.header['bits_per_sample']):
+            print("Warning: Noise file has different format than the main audio file")
+        
+        # Create a noise profile (frequency spectrum) from the noise file
+        # For a simple approach, we'll just calculate the average magnitude of noise
+        noise_profile = sum(abs(sample) for sample in noise_audio.samples) / len(noise_audio.samples)
+        print(f"Calculated noise profile with average magnitude: {noise_profile}")
+        
+        # Apply spectral subtraction (simplified version)
+        # In a real implementation, this would use FFT for frequency-domain processing
+        processed = []
+        for sample in self.samples:
+            # Simple noise reduction: if the sample is below the noise profile threshold,
+            # reduce it significantly. If it's above, reduce it by a smaller amount.
+            if abs(sample) <= noise_profile * 1.5:
+                # Reduce noise significantly (80%)
+                new_sample = int(sample * 0.2)
+            else:
+                # For signal above noise floor, apply gentler reduction
+                # The amount of reduction decreases as the signal gets stronger
+                ratio = min(1.0, (abs(sample) - noise_profile) / (self.max_value - noise_profile))
+                reduction_factor = 0.2 + (0.8 * ratio)
+                new_sample = int(sample * reduction_factor)
+            
+            processed.append(new_sample)
+        
+        self.samples = processed
+        print(f"Noise reduction complete using '{noise_file}' as reference")
+        return self
