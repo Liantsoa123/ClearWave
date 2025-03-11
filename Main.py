@@ -7,9 +7,10 @@ def print_menu():
     print("2. Anti-distortion")
     print("3. Noise reduction (threshold)")
     print("4. Noise reduction (reference file)")
-    print("5. Save and exit")
+    print("5. Change playback speed")
+    print("6. Save and exit")
     print("0. Exit without saving")
-    return input("Choose an option (0-5): ")
+    return input("Choose an option (0-6): ")
 
 def main():
     if len(sys.argv) < 3:
@@ -55,12 +56,16 @@ def main():
                 processor.reduce_noise_with_reference(noise_file)
             
             elif choice == "5":
+                speed = float(input("Enter speed factor (e.g., 0.5=slower, 2.0=faster, default=1.0): ") or "1.0")
+                processor.change_speed(speed)
+            
+            elif choice == "6":
                 processor.write_wav_file(output_file)
                 print("ClearWave processing completed successfully!")
                 break
             
             else:
-                print("Invalid option. Please choose between 0-5.")
+                print("Invalid option. Please choose between 0-6.")
 
     except Exception as e:
         print(f"Error: {e}")
